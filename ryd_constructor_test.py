@@ -44,17 +44,28 @@ def get_loc_obs_dict(i, O, name=''):
     ops = [O.tolist()]
     return dict(ActingOn=sites,Operators=ops,Name=name+str(i))
 
+def get_2site_obs_dict(i, j,O, name=''):
+    sites = [[i, j]]
+    ops = [O.tolist()]
+    return dict(ActingOn=sites, Operators=ops,Name=name+str(i)+str(j))
+
+def get_zz():
+    return np.kron(sigmaz(), sigmaz())
+
 
 params = dict()
 
 #physics related
-L=12
-sites, ops = make_tfi_hamiltonian(2, 1, 12)
+L=2
+g=0
+J=1
+sites, ops = make_tfi_hamiltonian(g,J,L)
 params['Graph'] = pbc_chain_dict(L)
 params['Hilbert'] = dict(QuantumNumbers=[-1,1],Size=L)
 params['Hamiltonian'] = dict(ActingOn=sites, Operators=ops)
    
-params['Observables'] = [get_loc_obs_dict(i, sigmaz(),'z') for i in range(L)]
+# request a list of all nearest neighbor correlators
+params['Observables'] = [get_2site_obs_dict(i, (i+1)%L, get_zz(), name='zz') for i in range(L)]
 
 #rbm details
 params['Machine'] = dict(Name='RbmSpin',Alpha=1.0)
