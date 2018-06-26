@@ -15,7 +15,7 @@ energy=[]
 sigma=[]
 evar = []
 evarsig = []
-L=2
+L=5
 
 obskeys = ['zz{0}{1}'.format(i, (i+1)%L) for i in range(L)]
 obsdict = dict([(k, []) for k in obskeys])
