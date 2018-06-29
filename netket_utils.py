@@ -13,9 +13,11 @@ def to_complex(arr):
     return arr[...,0] + 1j * arr[..., 1]
 
 def parse_netket_arr(arr,dtype=np.float64):
+    """ returns complex weights from netket lists"""
     return to_complex(np.asarray(arr, dtype=dtype))
 
 def gen_basis_strings(L, qnums=[0,1]):
+    """Returns all basis strings of length L where the values are drawn from qnums"""
     sps =len(qnums)
     if L ==1:
         return np.asarray(qnums, dtype=int).reshape((1,sps))
@@ -73,8 +75,53 @@ def constr_op(oplist):
     return o
 
 def matrix_el(op, psi):
+    """ returns <psi| op |psi>"""
     psidag = np.conj(np.transpose(psi))
     return np.dot(psidag, np.dot(op, psi))  
+
+def run_netket(filegen, nrun=1,parallel=False,nproc=1):
+    """ Calls netket to run on the json file which is returned by filegen().
+        filegen(i): function which returns the json param file to be used for run i.
+        nrun: how many runs. filegen will be called on i=0, ..., nrun-1
+        
+        parallel: if true passes to mpi with number of process nproc 
+        Returns: list of retcodes from the calls"""
+    if parallel:
+        base_call = ["mpirun", "-n", str(nproc), "netket"]
+    else:
+        base_call = ["netket"]
+    from subprocess import call
+    retcodes = []
+    for i in range(nrun):
+        retcodes.append(call(base_call + [filegen(i)]))
+    return retcodes
+        
+        
+def get_netket_obs(i, ofilegen, opname,iternum=-1):
+    """ returns mean val and std dev from last iteration
+         i: integer lableling the outputfile
+         ofilegen: returns, when called on i, the OutputFile that was fed to netket (not including .log)
+            
+         opname: name of the observable
+         iternum: which iteration to draw from"""
+    of = ofilegen(i)+".log"
+    with open(of) as of:
+        data=json.load(of)["Output"]
+        return data[iternum][opname]["Mean"], data[iternum][opname]["Sigma"]
+    
+    
+    
+def get_trace(i, ofilegen, opname):
+    """ returns mean value and std dev of opname for all iterations.
+        i and ofilegen are as in get_netket_obs.
+        Returns lists: mean, sigma"""
+        
+    of = ofilegen(i)+".log"
+    with open(of) as of:
+        data=json.load(of)["Output"]
+        niter=len(data)
+        return [ data[i][opname]["Mean"] for i in range(niter)], [data[i][opname]["Sigma"] for i in range(niter)]
+
 
 
 
